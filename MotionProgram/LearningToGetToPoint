@@ -1,0 +1,166 @@
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import random
+
+
+#import matplotlib.pyplot as plt
+import numpy as np
+import tensorflow as tf 
+
+def isClose(objectCord,step,point):
+	upperLim = point + (step / 2)
+	lowerLim = point - (step / 2)
+	if (objectCord >= lowerLim) and (objectCord <= upperLim):
+		return True 
+	else:
+		return False 
+def hasBeenTraveled(xCord,yCord,step,cordsTraveled):
+	numTraveled = len(cordsTraveled)
+	for i in range(numTraveled):
+		point = cordsTraveled[i]
+		x = point[0] 
+		y = point[1]
+		if isClose(x,step,xCord) and isClose(y,step,yCord):
+			return True
+	return False
+
+def printMap(inX, inY, xDest,yDest,cordsTraveled):
+	min = -10 
+	max = 10 
+	step = 1 
+	for x in range(max - min):
+		xCord = x + min 
+		mapString = ""
+		for y in range(max - min):
+			yCord = y + min
+			if isClose(yCord,step,yDest) and isClose(xCord,step,xDest):
+				mapString += "0" 
+			elif hasBeenTraveled(xCord,yCord,step,cordsTraveled):
+				mapString += "x"
+			else:
+				mapString += "-"
+		print(mapString)
+
+
+#function declartion for main function
+def move(cord, speed):
+	cord += speed
+	return cord
+
+def getTargetSpeed(cord,dest):
+	targetSpeed = (dest - cord) / 10
+	if targetSpeed > 1:
+		targetSpeed = 1
+	elif targetSpeed < -1:
+		targetSpeed = - 1
+	return targetSpeed
+
+
+def activationFunction(x,theta):
+	z  = np.dot(x, theta)
+	g = 1 / (1 + np.exp(-z)) #sigmoid function
+	g_deriv = np.multiply(g ,(1-g))
+	return( g , g_deriv)  
+
+def costFunction(g,y,m):
+	J = - (1 / m) *  np.sum( np.multiply(y , np.log(g)) + np.multiply((1 - y), np.log(1-g)) )
+	return(J)
+
+def train(theta,g,x,y,m,a):
+	(r,c) = theta.shape
+	delta = np.zeros((r,c))
+	for i in range(m):
+		exampleY = y[i]
+		exampleX = x[i]
+		exampleG = g[i]
+		sigma = exampleG - exampleY # error 
+		#print(exampleX)
+		delta += np.dot( np.transpose(exampleX) , sigma )
+	delta = delta * a * (1 / m)
+	theta = theta - delta 
+	return(theta)
+
+def main():
+	print("Begin")
+	#Normal Variables
+	xCord = 0
+	yCord  = 0
+	xSpeed = 0
+	ySpeed = 0
+	xDest = 0
+	yDest = 0
+	x = [xCord, yCord, xSpeed, ySpeed, xDest, yDest]
+	
+	#ML variables
+	a =  .0 1 # learning rate
+	m = 1  # number of training examples
+
+	#Intialization
+	targetY = [getTargetSpeed(xCord, xDest), getTargetSpeed(yCord,yDest)]
+	num_features = len(x)
+	num_output = len(targetY)
+	print("Number of features: %i, number of output: %i"%(num_features,num_output))
+	theta = []
+	for i in range(num_features):
+		new  = []
+		for j in range(num_output):
+			rando = random.uniform(0,0.1)
+			new.append(rando)
+		theta.append(new)
+	theta = np.matrix(theta)
+
+	cordsTraveled = []
+	#Training
+	for i in range(1000):
+		xCord = random.uniform(-10,10)
+		yCord = random.uniform(-10,10)	
+		xDest = random.uniform(-10,10)
+		yDest = random.uniform(-10,10)
+		x = [xCord,yCord,xSpeed,ySpeed,xDest,yDest]
+		targetY = [getTargetSpeed(xCord,xDest),getTargetSpeed(yCord,yDest)]
+		xMat = np.matrix(x)
+		yMat = np.matrix(targetY)
+		(g , g_deriv) = activationFunction(xMat,theta)
+		g = np.multiply(g,2) - 1 		
+
+		#J = costFunction(g,maty,m)
+		theta = train(theta,g,xMat,yMat,m,a)
+		xSpeed = g[0,0]  
+		ySpeed = g[0,1]  
+		xCord = move(xCord,xSpeed)
+		yCord = move(yCord,ySpeed)
+		cordsTraveled.append([xCord,yCord])
+		print("Dest= %f,%f cords= %f,%f"%(xDest,yDest,xCord,yCord))
+		#printMap(xCord,yCord,xDest,yDest,cordsTraveled)
+		cordsTraveled = []
+
+	#Test
+	xCord = random.uniform(-10,10)
+	yCord = random.uniform(-10,10)	
+	xDest = random.uniform(-10,10)
+	yDest = random.uniform(-10,10)
+	for i in range(20):
+		x = [xCord,yCord,xSpeed,ySpeed,xDest,yDest]
+		targetY = [getTargetSpeed(xCord,xDest),getTargetSpeed(yCord,yDest)]
+		matx = np.matrix(x)
+		maty = np.matrix(targetY)
+		(g , g_deriv) = activationFunction(matx,theta)
+		g = np.multiply(g,2) - 1 		
+
+		#J = costFunction(g,maty,m)
+		#theta = train(theta,g,matx,maty,m,a)
+		xSpeed = g[0,0]  
+		ySpeed = g[0,1]  
+		xCord = move(xCord,xSpeed)
+		yCord = move(yCord,ySpeed)
+		cordsTraveled.append([xCord,yCord])
+		print("Dest= %f,%f cords= %f,%f"%(xDest,yDest,xCord,yCord))
+		printMap(xCord,yCord,xDest,yDest,cordsTraveled)
+
+
+	
+
+main()
