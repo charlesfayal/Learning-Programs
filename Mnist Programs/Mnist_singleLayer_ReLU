@@ -1,0 +1,127 @@
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import random
+import argparse
+import sys
+
+
+#sys.path.append('/Users/Charles/Documents/Github/tensorflow/')
+#print(sys.path)
+from tensorflow.examples.tutorials.mnist import input_data
+
+import tensorflow as tf 
+import matplotlib.pyplot as plt
+import numpy as np
+
+FLAGS = None
+
+def activationFunction(x,theta):
+	z  = np.dot(x, theta)
+	g = 1 / (1 + np.exp(-z)) #sigmoid function
+	g_deriv = np.multiply(g ,(1-g))
+	return( g , g_deriv)  
+
+def costFunction(g,y,m):
+	J = - (1 / m) *  np.sum( np.multiply(y , np.log(g)) + np.multiply((1 - y), np.log(1-g)) )
+	return(J)
+
+def train(theta,g,x,y,m,a):
+	(r,c) = theta.shape
+	delta = np.zeros((r,c))
+	for i in range(m):
+		exampleY = y[i]
+		exampleX = x[i]
+		exampleG = g[i]
+		sigma = exampleG - exampleY # error 
+		#print(exampleX)
+		delta += np.dot( np.transpose(exampleX) , sigma )
+	delta = delta * a * (1 / m)
+	theta = theta - delta 
+	return(theta)
+
+#function declartion for main function
+def main(_):
+
+	print('begin')
+
+
+	fig = plt.figure()
+	ax = fig.add_subplot(1, 1, 1)
+
+	mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
+
+	#for i in range(100):
+	m = 100# of training data per training step
+	a =  0.5  # learning rate
+	training_steps = 1000
+	batchx , batchy =  mnist.train.next_batch( m ) # x is 784 for  a 28x28 image y is
+	matx = np.matrix(batchx) 
+	maty = np.matrix(batchy)
+	num_features = len(batchx[0])
+	num_output = len(batchy[0])
+
+	print(num_features)
+	print(num_output)
+	#Creating the theta vector
+	theta = np.random.rand(num_freatures, num_output)
+
+
+	theta = np.matrix(theta)
+	for i in range(training_steps):
+		matx , maty =  mnist.train.next_batch( m ) # x is 784 for  a 28x28 image y is
+		matx = np.matrix(batchx) 
+		maty = np.matrix(batchy)
+		(g , g_deriv) = activationFunction(matx,theta)
+		J = costFunction(g,maty,m)
+		theta = train(theta,g,matx,maty,m,a)
+		print(J) #check if algorithm is working 
+
+	batchx , batchy =  mnist.train.next_batch( 100 ) # x is 784 for  a 28x28 image y is
+	matx = np.matrix(batchx) 
+	maty = np.matrix(batchy)
+	(g , g_deriv) = activationFunction(matx,theta)
+
+	error =  maty - g
+	absError = np.absolute(error)
+	accuracy = np.mean(absError)
+	print(accuracy)
+	# x = []
+	# y = []
+	# color = []
+	# for i in range(28):
+	# 	for k in range(28):
+	# 		index = i * 28 + k 
+	# 		x.append(k)
+	# 		y.append(28 - i)
+	# 		color.append(batchx[0,index])
+	# rgb = plt.get_cmap('jet')(color)
+
+
+
+
+	# ax.scatter(x, y, color = rgb)
+	# plt.show()
+
+	#mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
+	#  55,000 training data mnist.train 10,000 test data mnist.test 5,000 validation data mnist.validation 
+	# mnist.train.labels has the labels 0-9 of the training data
+
+	x = tf.placeholder(tf.float32, [None,784])
+
+	#evidence = Sum (weights * x + b)
+	#softmax(x) = normalize(exp(x))
+	W = tf.Variable(tf.zeros([784, 10]))
+	b = tf.Variable(tf.zeros([10]))
+
+
+
+
+if __name__ == '__main__':
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--data_dir', type=str, default='/tmp/tensorflow/mnist/input_data',
+                      help='Directory for storing input data')
+  FLAGS, unparsed = parser.parse_known_args()
+  tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
